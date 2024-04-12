@@ -39,7 +39,7 @@ def tee_log(infile, out_lines, log_level):
     return t
 
 # Function to send telegram notification
-def send_telegram_notification(success, log):
+def send_telegram_notification(success, logging):
     payload = {
         "chat_id": telegram_chatid,
         "text": "SnapRAID job completed successfully." if success else "Error during SnapRAID job:",
@@ -47,7 +47,7 @@ def send_telegram_notification(success, log):
     }
 
     try:
-        response = requests.post(f"https://api.telegram.org/bot${telegram_botid}/sendMessage", data=json.dumps(payload), headers={"Content-Type": "application/json"})
+        response = requests.post(f"https://api.telegram.org/bot{telegram_botid}/sendMessage", data=json.dumps(payload), headers={"Content-Type": "application/json"})
         response.raise_for_status()
         logging.info("Telegram notification sent successfully.")
     except requests.exceptions.HTTPError as errh:
