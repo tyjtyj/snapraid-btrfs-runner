@@ -52,6 +52,12 @@ tls = false
 user =
 password =
 
+[telegram]
+enabled = false
+sendon = success,error
+botid = 
+chatid = 
+
 [scrub]
 ; set to true to run scrub after sync
 enabled = false
