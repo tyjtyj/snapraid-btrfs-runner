@@ -39,10 +39,10 @@ def tee_log(infile, out_lines, log_level):
     return t
 
 # Function to send telegram notification
-def send_telegram_notification(success, logging):
+def send_telegram_notification(success):
     payload = {
         "chat_id": telegram_chatid,
-        "text": "SnapRAID job completed successfully." if success else "Error during SnapRAID job:",
+        "text": "SnapRAID job completed successfully." if success else f"Error during SnapRAID job: \n {email_log.getvalue()}",
         "disable_notification": False
     }
 
@@ -212,8 +212,8 @@ def load_config(args):
     config["snapraid-btrfs"]["cleanup"] = (config["snapraid-btrfs"]["cleanup"].lower() == "true")
 
     if "telegram" in config and config["telegram"]["enabled"]:
-        telegram_botid = config["discord"]["botid"]
-        telegram_chatid = config["discord"]["chatid"]
+        telegram_botid = config["telegram"]["botid"]
+        telegram_chatid = config["telegram"]["chatid"]
 
     # Migration
     if config["scrub"]["percentage"]:
