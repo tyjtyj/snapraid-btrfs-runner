@@ -39,12 +39,12 @@ def tee_log(infile, out_lines, log_level):
     return t
 
 # Function to send telegram notification
-def send_telegram_notification(success):
+def send_telegram_notification(success, log):
     payload = {
         "chat_id": telegram_chatid,
-        "text": "SnapRAID job completed successfully." if success else f"Error during SnapRAID job: ``` {email_log.getvalue()} ```",
-        "disable_notification": False
-        # "parse_mode": "MarkdownV2" # FIXME doesnt want to work through requests
+        "text": f"SnapRAID job completed successfully. ``` {log} ```" if success else f"Error during SnapRAID job: ``` {log} ```",
+        "disable_notification": False,
+        "parse_mode": "MarkdownV2"
     }
 
     try:
@@ -165,7 +165,7 @@ def finish(is_success):
     if "telegram" in config and config["telegram"]["enabled"]:
         if ("error", "success")[is_success] in config["telegram"]["sendon"]:
             try:
-                send_telegram_notification(is_success)
+                send_telegram_notification(is_success, email_log.getvalue())
             except Exception:
                 logging.exception("Failed to send Telegram notification")
 
