@@ -43,8 +43,8 @@ def send_telegram_notification(success):
     payload = {
         "chat_id": telegram_chatid,
         "text": "SnapRAID job completed successfully." if success else f"Error during SnapRAID job: ``` {email_log.getvalue()} ```",
-        "disable_notification": False,
-        "parse_mode": "MarkdownV2"
+        "disable_notification": False
+        # "parse_mode": "MarkdownV2" # FIXME doesnt want to work through requests
     }
 
     try:
