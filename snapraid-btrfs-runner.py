@@ -42,8 +42,9 @@ def tee_log(infile, out_lines, log_level):
 def send_telegram_notification(success):
     payload = {
         "chat_id": telegram_chatid,
-        "text": "SnapRAID job completed successfully." if success else f"Error during SnapRAID job: \n {email_log.getvalue()}",
-        "disable_notification": False
+        "text": "SnapRAID job completed successfully." if success else f"Error during SnapRAID job: ``` {email_log.getvalue()} ```",
+        "disable_notification": False,
+        "parse_mode": "MarkdownV2"
     }
 
     try:
@@ -164,7 +165,7 @@ def finish(is_success):
     if "telegram" in config and config["telegram"]["enabled"]:
         if ("error", "success")[is_success] in config["telegram"]["sendon"]:
             try:
-                send_telegram_notification(is_success, email_log.getvalue())
+                send_telegram_notification(is_success)
             except Exception:
                 logging.exception("Failed to send Telegram notification")
 
