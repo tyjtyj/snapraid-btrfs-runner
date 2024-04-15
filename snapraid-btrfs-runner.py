@@ -42,9 +42,9 @@ def tee_log(infile, out_lines, log_level):
 def send_telegram_notification(success, log):
     payload = {
         "chat_id": telegram_chatid,
-        "text": f"SnapRAID job completed successfully. ``` {log} ```" if success else f"Error during SnapRAID job: ``` {log} ```",
-        "disable_notification": False,
-        "parse_mode": "MarkdownV2"
+        "text": f"✅ SnapRAID job completed successfully." if success else f"❌ Error during SnapRAID job: ``` {log} ```",
+        "disable_notification": False
+        # "parse_mode": "MarkdownV2" # FIXME not working through python
     }
 
     try:
