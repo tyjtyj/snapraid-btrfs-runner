@@ -43,8 +43,8 @@ def send_telegram_notification(success, log):
     payload = {
         "chat_id": telegram_chatid,
         "text": f"✅ SnapRAID job completed successfully." if success else f"❌ Error during SnapRAID job: ``` {log} ```",
-        "disable_notification": False
-        # "parse_mode": "MarkdownV2" # FIXME not working through python
+        "disable_notification": False,
+        "parse_mode": "Markdown"
     }
 
     try:
@@ -258,7 +258,7 @@ def setup_logger():
         file_logger.setFormatter(log_format)
         root_logger.addHandler(file_logger)
 
-    if config["email"]["sendon"]:
+    if config["email"]["sendon"] or config["telegram"]["sendon"]:
         global email_log
         email_log = StringIO()
         email_logger = logging.StreamHandler(email_log)
