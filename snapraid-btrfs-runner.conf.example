@@ -58,6 +58,12 @@ sendon = success,error
 botid = 
 chatid = 
 
+[healthchecksio]
+; set to true to update healthchecks.io status
+enabled = false
+; Check UUID from healthchecks.io
+healthchecksio-id = aabbccdd-1234-abcd-1234-abcdef123456
+
 [scrub]
 ; set to true to run scrub after sync
 enabled = false

@@ -4,6 +4,7 @@ import configparser
 import logging
 import logging.handlers
 import os.path
+import requests
 import shutil
 import subprocess
 import sys
@@ -171,6 +172,8 @@ def finish(is_success):
 
     if is_success:
         logging.info("Run finished successfully")
+        if config["healthchecksio"]["enabled"]:
+            healthchecksio("0")
     else:
         logging.error("Run failed")
     sys.exit(0 if is_success else 1)
@@ -183,7 +186,7 @@ def load_config(args):
 
     parser = configparser.RawConfigParser()
     parser.read(args.conf)
-    sections = ["snapraid-btrfs", "snapper", "snapraid", "logging", "email", "smtp", "scrub", "telegram"]
+    sections = ["snapraid-btrfs", "snapper", "snapraid", "logging", "email", "smtp", "scrub", "healthchecksio"]
     config = dict((x, defaultdict(lambda: "")) for x in sections)
     for section in parser.sections():
         for (k, v) in parser.items(section):
@@ -211,6 +214,8 @@ def load_config(args):
     config["snapraid"]["touch"] = (config["snapraid"]["touch"].lower() == "true")
     config["snapraid-btrfs"]["pool"] = (config["snapraid-btrfs"]["pool"].lower() == "true")
     config["snapraid-btrfs"]["cleanup"] = (config["snapraid-btrfs"]["cleanup"].lower() == "true")
+    # Healthchecksio addon
+    config["healthchecksio"]["enabled"] = (config["healthchecksio"]["enabled"].lower() == "true")
 
     if "telegram" in config and config["telegram"]["enabled"]:
         telegram_botid = config["telegram"]["botid"]
@@ -310,12 +315,23 @@ def main():
         print(traceback.format_exc())
         sys.exit(2)
 
+    if config["healthchecksio"]["enabled"]:
+        healthchecksio("start")
+
     try:
         run()
     except Exception:
         logging.exception("Run failed due to unexpected exception:")
         finish(False)
 
+def healthchecksio(state):
+    healthchecksio_id = config["healthchecksio"]["healthchecksio-id"]
+    logging.info("Sending healthchecks.io: " + state)
+    try:
+        requests.get("https://hc-ping.com/" + healthchecksio_id + "/" + state, timeout=10)
+    except requests.RequestException as e:
+        # Log ping failure here...
+        logging.error("Healthchecks.io ping failed: %s" % e)
 
 def run():
     logging.info("=" * 60)
