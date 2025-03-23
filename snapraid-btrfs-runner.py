@@ -12,11 +12,16 @@ import time
 import traceback
 from collections import Counter, defaultdict
 from io import StringIO
+import requests
+import json
 
 # Global variables
 config = None
 email_log = None
 
+# Telegram variables
+telegram_botid = None
+telegram_chatid = None
 
 def tee_log(infile, out_lines, log_level):
     """
@@ -33,6 +38,27 @@ def tee_log(infile, out_lines, log_level):
     t.start()
     return t
 
+# Function to send telegram notification
+def send_telegram_notification(success, log):
+    payload = {
+        "chat_id": telegram_chatid,
+        "text": f"✅ SnapRAID job completed successfully." if success else f"❌ Error during SnapRAID job: ``` {log} ```",
+        "disable_notification": False,
+        "parse_mode": "Markdown"
+    }
+
+    try:
+        response = requests.post(f"https://api.telegram.org/bot{telegram_botid}/sendMessage", data=json.dumps(payload), headers={"Content-Type": "application/json"})
+        response.raise_for_status()
+        logging.info("Telegram notification sent successfully.")
+    except requests.exceptions.HTTPError as errh:
+        logging.error("HTTP Error: %s" % errh)
+    except requests.exceptions.ConnectionError as errc:
+        logging.error("Error Connecting: %s" % errc)
+    except requests.exceptions.Timeout as errt:
+        logging.error("Timeout Error: %s" % errt)
+    except requests.exceptions.RequestException as err:
+        logging.error("Something went wrong: %s" % err)
 
 def snapraid_btrfs_command(command, *, snapraid_args={}, snapraid_btrfs_args={}, allow_statuscodes=[]):
     """
@@ -135,6 +161,14 @@ def finish(is_success):
             send_email(is_success)
         except Exception:
             logging.exception("Failed to send email")
+
+    if "telegram" in config and config["telegram"]["enabled"]:
+        if ("error", "success")[is_success] in config["telegram"]["sendon"]:
+            try:
+                send_telegram_notification(is_success, email_log.getvalue())
+            except Exception:
+                logging.exception("Failed to send Telegram notification")
+
     if is_success:
         logging.info("Run finished successfully")
     else:
@@ -144,9 +178,12 @@ def finish(is_success):
 
 def load_config(args):
     global config
+    global telegram_botid
+    global telegram_chatid
+
     parser = configparser.RawConfigParser()
     parser.read(args.conf)
-    sections = ["snapraid-btrfs", "snapper", "snapraid", "logging", "email", "smtp", "scrub"]
+    sections = ["snapraid-btrfs", "snapper", "snapraid", "logging", "email", "smtp", "scrub", "telegram"]
     config = dict((x, defaultdict(lambda: "")) for x in sections)
     for section in parser.sections():
         for (k, v) in parser.items(section):
@@ -174,6 +211,10 @@ def load_config(args):
     config["snapraid"]["touch"] = (config["snapraid"]["touch"].lower() == "true")
     config["snapraid-btrfs"]["pool"] = (config["snapraid-btrfs"]["pool"].lower() == "true")
     config["snapraid-btrfs"]["cleanup"] = (config["snapraid-btrfs"]["cleanup"].lower() == "true")
+
+    if "telegram" in config and config["telegram"]["enabled"]:
+        telegram_botid = config["telegram"]["botid"]
+        telegram_chatid = config["telegram"]["chatid"]
 
     # Migration
     if config["scrub"]["percentage"]:
@@ -217,7 +258,7 @@ def setup_logger():
         file_logger.setFormatter(log_format)
         root_logger.addHandler(file_logger)
 
-    if config["email"]["sendon"]:
+    if config["email"]["sendon"] or config["telegram"]["sendon"]:
         global email_log
         email_log = StringIO()
         email_logger = logging.StreamHandler(email_log)
